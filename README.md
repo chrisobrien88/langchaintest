@@ -1,0 +1,1 @@
+A project to get a grip on the basics of langchain
