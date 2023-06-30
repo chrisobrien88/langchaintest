@@ -10,35 +10,39 @@ import * as dotenv from "dotenv";
 // 2. Load environment variables
 dotenv.config();
 
-            // checking api key has valid requests
-            const apiKey = process.env.OPENAI_API_KEY;
-            console.log("api key", apiKey);
-            const apiEndpoint = "https://api.openai.com/v1/engines/davinci/completions";
-            const payload = {
-            prompt: "This is a test",
-            max_tokens: 5,
-            temperature: 0.9,
-            top_p: 1,
-            n: 1,
-            stream: false,
-            logprobs: null,
-            stop: "\n",
-            };
+const checkAPIresponse = async () => {
+  // checking api key has valid requests
+  const apiKey = process.env.OPENAI_API_KEY;
+  console.log("api key", apiKey);
+  const apiEndpoint = "https://api.openai.com/v1/engines/davinci/completions";
+  const payload = {
+    prompt: "This is a test",
+    max_tokens: 5,
+    temperature: 0.9,
+    top_p: 1,
+    n: 1,
+    stream: false,
+    logprobs: null,
+    stop: "\n",
+  };
 
-            const response = await fetch(apiEndpoint, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify(payload),
-            });
+  const response = await fetch(apiEndpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(payload),
+  });
 
-            // Get the remaining rate limit and reset time from the response headers
-            const remainingLimit = response.headers.get("x-ratelimit-remaining");
-            const resetTime = response.headers.get("x-ratelimit-reset");
+  // Get the remaining rate limit and reset time from the response headers
+  const remainingLimit = response.headers.get("x-ratelimit-remaining");
+  const resetTime = response.headers.get("x-ratelimit-reset");
 
-            console.log(response);
+  console.log(response);
+};
+
+// checkAPIresponse();
 
 // 3. Set up input data and paths
 const txtFilename = "the_anatomy_of_drunkenness";
@@ -75,12 +79,13 @@ export const runWithEmbeddings = async () => {
 
     // 6.2.2. Create a RecursiveCharacterTextSplitter with a specified chunk size (embeddings endpoint in OpenAI has a limit of 2048 characters with each request)
     console.log("Creating text splitter");
-    const textSplitter = new RecursiveCharacterTextSplitter(1000);
+    const textSplitter = new RecursiveCharacterTextSplitter({chunkSize: 1000});
     console.log("Text splitter created");
 
     // 6.2.3. Split the input text into documents
     console.log("Creating documents");
     const docs = await textSplitter.createDocuments([text]);
+    console.log("Documents:", docs[0]);
     console.log("Documents created");
 
     // 6.2.4. Create a new vector store from the documents using OpenAIEmbeddings
@@ -103,27 +108,15 @@ export const runWithEmbeddings = async () => {
   const chain = RetrievalQAChain.fromLLM(model, vectorStore.asRetriever());
 
   // 8. Define a function to handle rate limiting errors and retry the request
-  const handleRateLimitingError = async () => {
-    console.log("Rate limit exceeded. Retrying after a delay...");
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // Delay of 1 second
-    await runWithEmbeddings(); // Retry the request
-  };
+  const res = await chain.call({
+    query: question,
+  })
 
   // 9. Execute the retrieval question-answering process
-  try {
-    const response = await chain.process(question);
-
-    // 9.1. Print the answer and supporting context
-    console.log("Answer:", response.answer);
-    console.log("Supporting context:", response.context);
-  } catch (error) {
-    // 9.2. Handle rate limiting errors
-    if (error.message.includes("429")) {
-      await handleRateLimitingError();
-    } else {
-      console.log("Error during retrieval question-answering process:", error);
-    }
-  }
+  
+    console.log("Answer:", ({ res }));
+    
+  
 };
 
 // 10. Run the main function
