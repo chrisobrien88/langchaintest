@@ -35,19 +35,15 @@ const checkAPIresponse = async () => {
     body: JSON.stringify(payload),
   });
 
-  // Get the remaining rate limit and reset time from the response headers
-  const remainingLimit = response.headers.get("x-ratelimit-remaining");
-  const resetTime = response.headers.get("x-ratelimit-reset");
-
   console.log(response);
 };
 
 // checkAPIresponse();
 
 // 3. Set up input data and paths
-const txtFilename = "the_anatomy_of_drunkenness";
-const question = "What are the causes of drunkenness?";
-const txtPath = `./${txtFilename}.txt`;
+const txtFilename = "findmeetingrooms";
+const question = "What are the room names at Freys Hotel";
+const txtPath = `./${txtFilename}.csv`;
 const VECTOR_STORE_PATH = `${txtFilename}.index`;
 
 fs.access(txtPath, fs.constants.R_OK | fs.constants.W_OK, (err) => {
